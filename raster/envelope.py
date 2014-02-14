@@ -69,64 +69,6 @@ class Envelope(object):
         """
         return self.__dict__ == right.__dict__
 
-    def __lt__(self, other):
-        """
-        Operator to test whether self is a proper subset of other
-        """
-        if self.x_min <= other.x_min:
-            return False
-        if self.x_max >= other.x_max:
-            return False
-        if self.y_min <= other.y_min:
-            return False
-        if self.y_max >= other.y_max:
-            return False
-        return True
-
-    def __le__(self, other):
-        """
-        Operator to test whether self is a subset of other (allowed to
-        be coincident)
-        """
-        if self.x_min < other.x_min:
-            return False
-        if self.x_max > other.x_max:
-            return False
-        if self.y_min < other.y_min:
-            return False
-        if self.y_max > other.y_max:
-            return False
-        return True
-
-    def __gt__(self, other):
-        """
-        Operator to test whether self is a proper superset of other
-        """
-        if self.x_min >= other.x_min:
-            return False
-        if self.x_max <= other.x_max:
-            return False
-        if self.y_min >= other.y_min:
-            return False
-        if self.y_max <= other.y_max:
-            return False
-        return True
-
-    def __ge__(self, other):
-        """
-        Operator to test whether self is a superset of other (allowed to
-        be coincident)
-        """
-        if self.x_min > other.x_min:
-            return False
-        if self.x_max < other.x_max:
-            return False
-        if self.y_min > other.y_min:
-            return False
-        if self.y_max < other.y_max:
-            return False
-        return True
-
     def __or__(self, other):
         """
         Union operator.  Returns the minimum bounding envelope of both self
@@ -139,6 +81,10 @@ class Envelope(object):
         return Envelope(x_min, y_min, x_max, y_max)
 
     def __and__(self, other):
+        """
+        Intersection operator.  Returns the minimum bounding envelope of the
+        overlap area of both self and other
+        """
         x_min = max(self.x_min, other.x_min)
         y_min = max(self.y_min, other.y_min)
         x_max = min(self.x_max, other.x_max)
@@ -174,15 +120,33 @@ class Envelope(object):
 
     def is_subset(self, other):
         """
-        Tests whether self is a subset of other
+        Method to test whether self is a subset of other (allowed to
+        be coincident)
         """
-        return self.__le__(other)
+        if self.x_min < other.x_min:
+            return False
+        if self.x_max > other.x_max:
+            return False
+        if self.y_min < other.y_min:
+            return False
+        if self.y_max > other.y_max:
+            return False
+        return True
 
     def is_superset(self, other):
         """
-        Tests whether self is a superset of other
+        Operator to test whether self is a superset of other (allowed to
+        be coincident)
         """
-        return self.__ge__(other)
+        if self.x_min > other.x_min:
+            return False
+        if self.x_max < other.x_max:
+            return False
+        if self.y_min > other.y_min:
+            return False
+        if self.y_max < other.y_max:
+            return False
+        return True
 
     def is_disjoint(self, other):
         """
@@ -360,41 +324,17 @@ class RasterEnvelope(object):
         return self._cell_size
     # pylint: enable=missing-docstring
 
-    def __lt__(self, other):
-        """
-        Operator to test whether self is a proper subset of other
-        """
-        return self.env.__lt__(other.env)
-
-    def __le__(self, other):
-        """
-        Operator to test whether self is a subset of other
-        """
-        return self.env.__le__(other.env)
-
-    def __gt__(self, other):
-        """
-        Operator to test whether self is a proper superset of other
-        """
-        return self.env.__gt__(other.env)
-
-    def __ge__(self, other):
-        """
-        Operator to test whether self is a superset of other
-        """
-        return self.env.__ge__(other.env)
-
     def is_subset(self, other):
         """
         Tests whether self is a subset of other
         """
-        return self.env.__le__(other.env)
+        return self.env.is_subset(other.env)
 
     def is_superset(self, other):
         """
         Tests whether self is a superset of other
         """
-        return self.env.__ge__(other.env)
+        return self.env.is_superset(other.env)
 
     def is_disjoint(self, other):
         """
