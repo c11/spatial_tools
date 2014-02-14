@@ -372,7 +372,7 @@ class RasterEnvelopeTest(unittest.TestCase):
         Test method from_gdal_dataset
         """
         from osgeo import gdal, gdalconst
-        ds = gdal.Open('data/dem', gdalconst.GA_ReadOnly)
+        ds = gdal.Open('./data/dem.tif', gdalconst.GA_ReadOnly)
         re = envelope.RasterEnvelope.from_gdal_dataset(ds)
         self.assertEqual(re.x_min, -2130015.0)
         self.assertEqual(re.y_min, 2580015.0)
