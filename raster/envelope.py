@@ -61,8 +61,9 @@ class Envelope(object):
         """
         Pretty print an Envelope instance
         """
-        return "%s%r" % (self.__class__.__name__, tuple((self.x_min,
-            self.y_min, self.x_max, self.y_max)))
+        all = [self.x_min, self.y_min, self.x_max, self.y_max]
+        formatted = ', '.join(['%.3f' % i for i in all])
+        return "%s(%s)" % (self.__class__.__name__, formatted)
 
     def __eq__(self, right):
         """
@@ -207,9 +208,10 @@ class RasterEnvelope(Envelope):
         """
         Pretty print a RasterEnvelope instance
         """
-        return "%s(%.1f, %.1f, %.1f, %.1f, %.1f)" % (self.__class__.__name__,
-            self.x_min, self.y_min, self.x_max, self.y_max,
-            self.cell_size)
+        all = [self.x_min, self.y_min, self.x_max, self.y_max, self.cell_size]
+        formatted = ', '.join(['%.3f' % i for i in all])
+        return "%s(%s)" % (self.__class__.__name__, formatted)
+
 
     def __eq__(self, other):
         """
