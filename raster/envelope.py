@@ -1,4 +1,5 @@
 # pylint: disable=too-many-arguments,too-many-return-statements
+# pylint: disable=arguments-differ
 
 """
 Spatial envelope classes used mostly with raster data to determine extents
@@ -163,7 +164,7 @@ class Envelope(object):
         return Envelope(x_min, y_min, x_max, y_max)
 
 
-class RasterEnvelope(object):
+class RasterEnvelope(Envelope):
     """
     A RasterEnvelope is an Envelope that also defines a cell size.  As such,
     it has the concept of x_size (number of columns) and y_size (number of
@@ -195,12 +196,12 @@ class RasterEnvelope(object):
             Cell size within envelope
         """
         # Call the Envelope superclass to set the initial envelope
-        self._env = Envelope(x_min, y_min, x_max, y_max)
+        super(RasterEnvelope, self).__init__(x_min, y_min, x_max, y_max)
         self._cell_size = cell_size
 
         # Adjust the window if necessary
-        self._env._x_max, self._env._y_min, self._x_size, self._y_size = \
-            self._calculate_snapped_window()
+        self._x_max, self._y_min, self._x_size, self._y_size = \
+            calculate_snapped_window(self, self.cell_size)
 
     def __repr__(self):
         """
@@ -247,58 +248,8 @@ class RasterEnvelope(object):
         y_min = y_max - (ds.RasterYSize * cell_size)
         return cls(x_min, y_min, x_max, y_max, cell_size)
 
-    def _calculate_snapped_window(self):
-        """
-        Given an envelope and cell_size, ensure that the envelope is a
-        multiple of cell_size.  Set the number of rows and columns and shift
-        the lower right corner if necessary.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        parameters : tuple
-            Parameters for the snapped window as
-            (x_max, y_min, x_size, y_size)
-        """
-        # Set rows and columns.  Adjust the number of rows and columns to be
-        # a superset of the currently specified window if not a multiple of
-        # cell_size (ie. 'grow' it from the upper left corner)
-        x_size = get_num_cells(self.x_max, self.x_min, self.cell_size)
-        y_size = get_num_cells(self.y_max, self.y_min, self.cell_size)
-
-        # Adjust the lower right corner so that the envelope range is a
-        # multiple of cell_size
-        x_max = self.x_min + (x_size * self.cell_size)
-        y_min = self.y_max - (y_size * self.cell_size)
-
-        # Return these
-        return (x_max, y_min, x_size, y_size)
-
     # Simple properties to return class attributes
     # pylint: disable=missing-docstring
-    @property
-    def env(self):
-        return self._env
-
-    @property
-    def x_min(self):
-        return self._env.x_min
-
-    @property
-    def y_min(self):
-        return self._env.y_min
-
-    @property
-    def x_max(self):
-        return self._env.x_max
-
-    @property
-    def y_max(self):
-        return self._env.y_max
-
     @property
     def x_size(self):
         return self._x_size
@@ -311,24 +262,6 @@ class RasterEnvelope(object):
     def cell_size(self):
         return self._cell_size
     # pylint: enable=missing-docstring
-
-    def is_subset(self, other):
-        """
-        Tests whether self is a subset of other
-        """
-        return self.env.is_subset(other.env)
-
-    def is_superset(self, other):
-        """
-        Tests whether self is a superset of other
-        """
-        return self.env.is_superset(other.env)
-
-    def is_disjoint(self, other):
-        """
-        Tests whether self and other are disjoint (non-overlapping)
-        """
-        return self.env.is_disjoint(other.env)
 
     def is_snapped(self, other):
         """
@@ -376,16 +309,16 @@ class RasterEnvelope(object):
             return copy.copy(self)
         elif self.is_subset(other):
             if snap_this == True:
-                return get_minimum_bounding_envelope(other.env, self)
+                return get_minimum_bounding_envelope(other, self)
             else:
                 return copy.copy(other)
         elif self.is_superset(other):
             if snap_this == True:
                 return copy.copy(self)
             else:
-                return get_minimum_bounding_envelope(self.env, other)
+                return get_minimum_bounding_envelope(self, other)
         else:
-            env = self.env.union(other.env)
+            env = super(RasterEnvelope, self).union(other)
             if snap_this == True:
                 return get_minimum_bounding_envelope(env, self)
             else:
@@ -405,14 +338,14 @@ class RasterEnvelope(object):
             if snap_this == True:
                 return copy.copy(self)
             else:
-                return get_minimum_bounding_envelope(self.env, other)
+                return get_minimum_bounding_envelope(self, other)
         elif self.is_superset(other):
             if snap_this == True:
-                return get_minimum_bounding_envelope(other.env, self)
+                return get_minimum_bounding_envelope(other, self)
             else:
                 return copy.copy(other)
         else:
-            env = self.env.intersection(other.env)
+            env = super(RasterEnvelope, self).intersection(other)
             if snap_this == True:
                 return get_minimum_bounding_envelope(env, self)
             else:
@@ -503,6 +436,41 @@ def get_num_cells(coord_max, coord_min, cell_size):
     return int(n_cells)
 
 
+def calculate_snapped_window(env, cell_size):
+    """
+    Given an envelope and cell_size, ensure that the envelope is a
+    multiple of cell_size.  Set the number of rows and columns and shift
+    the lower right corner if necessary.
+
+    Parameters
+    ----------
+    env : Envelope instance
+        The envelope to snap
+
+    cell_size : double
+        The cell size to use for snapping
+
+    Returns
+    -------
+    parameters : tuple
+        Parameters for the snapped window as
+        (x_max, y_min, x_size, y_size)
+    """
+    # Set rows and columns.  Adjust the number of rows and columns to be
+    # a superset of the currently specified window if not a multiple of
+    # cell_size (ie. 'grow' it from the upper left corner)
+    x_size = get_num_cells(env.x_max, env.x_min, cell_size)
+    y_size = get_num_cells(env.y_max, env.y_min, cell_size)
+
+    # Adjust the lower right corner so that the envelope range is a
+    # multiple of cell_size
+    x_max = env.x_min + (x_size * cell_size)
+    y_min = env.y_max - (y_size * cell_size)
+
+    # Return these
+    return (x_max, y_min, x_size, y_size)
+
+
 def get_minimum_bounding_envelope(bound_env, snap_re):
     """
     Given a bounding envelope, bound_env return a new RasterEnvelope that
@@ -525,7 +493,7 @@ def get_minimum_bounding_envelope(bound_env, snap_re):
 
     # Discern the relationship between these two envelopes - if they are
     # disjoint, raise an exception
-    if bound_env.is_disjoint(snap_re.env):
+    if bound_env.is_disjoint(snap_re):
         err_str = 'The two envelopes do not overlap'
         raise EnvelopeError(err_str)
 
@@ -536,8 +504,8 @@ def get_minimum_bounding_envelope(bound_env, snap_re):
 
     # Adjust this envelope's upper left x,y coordinate to snap to a
     # pixel boundary
-    x_min = snap_re.env.x_min + (x_off * snap_re.cell_size)
-    y_max = snap_re.env.y_max - (y_off * snap_re.cell_size)
+    x_min = snap_re.x_min + (x_off * snap_re.cell_size)
+    y_max = snap_re.y_max - (y_off * snap_re.cell_size)
 
     # Create a raster envelope using the upper left coordinate
     min_re = RasterEnvelope(x_min, bound_env.y_min, bound_env.x_max, y_max,
@@ -570,7 +538,7 @@ def min_of(re_list, snap_re=None):
     # Set the initial envelope to be that of the first passed envelope
     min_re = copy.deepcopy(re_list[0])
     for i in range(1, len(re_list)):
-        min_env = min_re.env.intersection(re_list[i].env)
+        min_env = min_re.intersection(re_list[i])
         min_re = get_minimum_bounding_envelope(min_env, snap_re)
     return min_re
 
@@ -599,6 +567,6 @@ def max_of(re_list, snap_re=None):
     # Set the initial envelope to be that of the first passed envelope
     max_re = copy.deepcopy(re_list[0])
     for i in range(1, len(re_list)):
-        max_env = max_re.env.union(re_list[i].env)
+        max_env = max_re.union(re_list[i])
         max_re = get_minimum_bounding_envelope(max_env, snap_re)
     return max_re
