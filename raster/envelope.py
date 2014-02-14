@@ -69,28 +69,6 @@ class Envelope(object):
         """
         return self.__dict__ == right.__dict__
 
-    def __or__(self, other):
-        """
-        Union operator.  Returns the minimum bounding envelope of both self
-        and other
-        """
-        x_min = min(self.x_min, other.x_min)
-        y_min = min(self.y_min, other.y_min)
-        x_max = max(self.x_max, other.x_max)
-        y_max = max(self.y_max, other.y_max)
-        return Envelope(x_min, y_min, x_max, y_max)
-
-    def __and__(self, other):
-        """
-        Intersection operator.  Returns the minimum bounding envelope of the
-        overlap area of both self and other
-        """
-        x_min = max(self.x_min, other.x_min)
-        y_min = max(self.y_min, other.y_min)
-        x_max = min(self.x_max, other.x_max)
-        y_max = min(self.y_max, other.y_max)
-        return Envelope(x_min, y_min, x_max, y_max)
-
     # Simple properties to return class attributes
     # pylint: disable=missing-docstring
     @property
@@ -164,15 +142,25 @@ class Envelope(object):
 
     def union(self, other):
         """
-        Unions self and other
+        Union method.  Returns the minimum bounding envelope of both self
+        and other
         """
-        return self.__or__(other)
+        x_min = min(self.x_min, other.x_min)
+        y_min = min(self.y_min, other.y_min)
+        x_max = max(self.x_max, other.x_max)
+        y_max = max(self.y_max, other.y_max)
+        return Envelope(x_min, y_min, x_max, y_max)
 
     def intersection(self, other):
         """
-        Intersects self and other
+        Intersection method.  Returns the minimum bounding envelope of the
+        overlap area of self and other
         """
-        return self.__and__(other)
+        x_min = max(self.x_min, other.x_min)
+        y_min = max(self.y_min, other.y_min)
+        x_max = min(self.x_max, other.x_max)
+        y_max = min(self.y_max, other.y_max)
+        return Envelope(x_min, y_min, x_max, y_max)
 
 
 class RasterEnvelope(object):
@@ -397,7 +385,7 @@ class RasterEnvelope(object):
             else:
                 return get_minimum_bounding_envelope(self.env, other)
         else:
-            env = self.env | other.env
+            env = self.env.union(other.env)
             if snap_this == True:
                 return get_minimum_bounding_envelope(env, self)
             else:
@@ -424,7 +412,7 @@ class RasterEnvelope(object):
             else:
                 return copy.copy(other)
         else:
-            env = self.env & other.env
+            env = self.env.intersection(other.env)
             if snap_this == True:
                 return get_minimum_bounding_envelope(env, self)
             else:
@@ -579,10 +567,10 @@ def min_of(re_list, snap_re=None):
     if snap_re is None:
         snap_re = re_list[0]
 
-    # Set the minimum envelope to be that of the first passed envelope
+    # Set the initial envelope to be that of the first passed envelope
     min_re = copy.deepcopy(re_list[0])
     for i in range(1, len(re_list)):
-        min_env = min_re.env & re_list[i].env
+        min_env = min_re.env.intersection(re_list[i].env)
         min_re = get_minimum_bounding_envelope(min_env, snap_re)
     return min_re
 
@@ -608,9 +596,9 @@ def max_of(re_list, snap_re=None):
     if snap_re is None:
         snap_re = re_list[0]
 
-    # Set the minimum envelope to be that of the first passed envelope
+    # Set the initial envelope to be that of the first passed envelope
     max_re = copy.deepcopy(re_list[0])
     for i in range(1, len(re_list)):
-        max_env = max_re.env | re_list[i].env
+        max_env = max_re.env.union(re_list[i].env)
         max_re = get_minimum_bounding_envelope(max_env, snap_re)
     return max_re
