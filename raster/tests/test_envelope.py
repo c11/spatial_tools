@@ -5,7 +5,7 @@ Tests for Envelope and RasterEnvelope classes
 """
 
 import unittest
-from spatial.raster import envelope
+from spatial_tools.raster import envelope
 
 
 class EnvelopeTest(unittest.TestCase):
@@ -50,34 +50,19 @@ class EnvelopeTest(unittest.TestCase):
         c = envelope.Envelope(1.0, 1.0, 9.0, 9.0)
         d = envelope.Envelope(10.0, 10.0, 20.0, 20.0)
 
-        # a and b are equal and (non-proper) subsets and supersets of each
-        # other
+        # a and b are equal and subsets and supersets of each other
         self.assert_(a == b)
-        self.assertTrue(a <= b)
-        self.assertTrue(b <= a)
-        self.assertTrue(a >= b)
-        self.assertTrue(b >= a)
         self.assertTrue(a.is_subset(b))
         self.assertTrue(b.is_subset(a))
         self.assertTrue(a.is_superset(b))
         self.assertTrue(b.is_superset(a))
 
-        # a and b are NOT proper subsets and supersets of each other
-        self.assertFalse(a < b)
-        self.assertFalse(b < a)
-        self.assertFalse(a > b)
-        self.assertFalse(b > a)
-
-        # c is a proper subset of a
-        self.assertTrue(c < a)
-        self.assertTrue(c <= a)
-        self.assertFalse(c >= a)
+        # c is a subset of a
+        self.assertTrue(c.is_subset(a))
         self.assertFalse(c.is_disjoint(a))
 
-        # a is a proper superset of c
-        self.assertTrue(a > c)
-        self.assertTrue(a >= c)
-        self.assertFalse(a <= c)
+        # a is a superset of c
+        self.assertTrue(a.is_superset(c))
         self.assertFalse(a.is_disjoint(c))
 
         # d is disjoint from c, but shares a common point with a
@@ -85,8 +70,6 @@ class EnvelopeTest(unittest.TestCase):
         self.assertTrue(c.is_disjoint(d))
         self.assertFalse(d.is_disjoint(a))
         self.assertTrue(d.is_disjoint(c))
-        self.assertFalse(a <= d)
-        self.assertFalse(a >= d)
 
     def test_set_operations(self):
         """
@@ -98,16 +81,12 @@ class EnvelopeTest(unittest.TestCase):
         intersection = envelope.Envelope(3.0, 3.0, 7.0, 7.0)
 
         # Union
-        c = a | b
-        d = a.union(b)
+        c = a.union(b)
         self.assertEqual(c, union)
-        self.assertEqual(d, union)
 
         # Intersection
-        c = a & b
-        d = a.intersection(b)
+        c = a.intersection(b)
         self.assertEqual(c, intersection)
-        self.assertEqual(d, intersection)
 
 
 class RasterEnvelopeTest(unittest.TestCase):
