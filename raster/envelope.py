@@ -199,9 +199,9 @@ class RasterEnvelope(Envelope):
         super(RasterEnvelope, self).__init__(x_min, y_min, x_max, y_max)
         self._cell_size = cell_size
 
-        # Adjust the window if necessary
+        # Adjust the envelope if necessary
         self._x_max, self._y_min, self._x_size, self._y_size = \
-            calculate_snapped_window(self, self.cell_size)
+            calculate_snapped_envelope(self, self.cell_size)
 
     def __repr__(self):
         """
@@ -436,7 +436,7 @@ def get_num_cells(coord_max, coord_min, cell_size):
     return int(n_cells)
 
 
-def calculate_snapped_window(env, cell_size):
+def calculate_snapped_envelope(env, cell_size):
     """
     Given an envelope and cell_size, ensure that the envelope is a
     multiple of cell_size.  Set the number of rows and columns and shift
@@ -453,11 +453,11 @@ def calculate_snapped_window(env, cell_size):
     Returns
     -------
     parameters : tuple
-        Parameters for the snapped window as
+        Parameters for the snapped envelope as
         (x_max, y_min, x_size, y_size)
     """
     # Set rows and columns.  Adjust the number of rows and columns to be
-    # a superset of the currently specified window if not a multiple of
+    # a superset of the currently specified envelope if not a multiple of
     # cell_size (ie. 'grow' it from the upper left corner)
     x_size = get_num_cells(env.x_max, env.x_min, cell_size)
     y_size = get_num_cells(env.y_max, env.y_min, cell_size)
